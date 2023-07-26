@@ -80,6 +80,8 @@
 				<img src="@/assets/ding.png" alt="" class="ding" />
 				{{ add }}
 			</div>
+
+			<img src="../assets/logo.png" class="logo" alt="" />
 		</div>
 	</div>
 </template>
@@ -277,5 +279,12 @@ export default {
 	display: flex;
 	justify-content: center;
 	text-shadow: 3px 3px 3px #807f7f;
+}
+
+.logo {
+	position: absolute;
+	height: 50px;
+	right: 10px;
+	bottom: 10px;
 }
 </style>
