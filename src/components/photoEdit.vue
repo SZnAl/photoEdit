@@ -15,9 +15,9 @@
 			@change="handleFileChange"
 		/>
 
-		<el-skeleton v-show="imageUrl === undefined" :rows="6" animated />
+		<el-skeleton v-if="imageUrl === undefined" :rows="6" animated />
 
-		<div class="editBox" v-show="imageUrl !== undefined">
+		<div class="editBox" v-if="imageUrl !== undefined">
 			<div class="inputBox">
 				时间：
 				<el-time-select
@@ -66,11 +66,14 @@
 		</div>
 
 		<div
-			v-show="imageUrl !== undefined"
+			v-if="imageUrl !== undefined"
 			ref="vueDomSaveToImage"
 			:class="imgDirection === '1' ? 'imgBox1' : 'imgBox'"
 		>
-			<img class="img" :src="imageUrl" alt="" />
+			<div :class="imgDirection === '1' ? 'imgCut0' : 'imgCut1'">
+				<img class="img" :src="imageUrl" alt="" />
+			</div>
+
 			<div class="time">{{ timeValue }}</div>
 			<div class="details">
 				<span class="date">{{ dateValue }}</span>
@@ -94,11 +97,11 @@ export default {
 	components: {},
 	data() {
 		return {
-			active: 1,
+			active: 1, //当前进度
 			imageUrl: undefined, //图片地址
 			add: ' 西安市·汇成·和苑',
 			timeValue: '07:58',
-			dateValue: '2023-06-28',
+			dateValue: '2023-07-06',
 			weekValue: '四',
 			weekOptions: [
 				{ label: '一', value: '一' },
@@ -124,7 +127,7 @@ export default {
 					const width = img.width;
 					const height = img.height;
 					const ratio = width / height;
-					if (ratio > 1) {
+					if (ratio > 0.9) {
 						console.log('横向图片');
 						this.imgDirection = '0';
 					} else {
@@ -187,16 +190,13 @@ export default {
 						null
 					);
 					save_link.dispatchEvent(event);
-
 					this.imageUrl = undefined;
-					this.active = 1;
-
+					this.active = 1; //步骤置为1
 					this.$notify({
 						title: '成功',
 						message: '保存成功!',
 						type: 'success',
 					});
-
 					this.$forceUpdate();
 				});
 			});
@@ -246,8 +246,23 @@ export default {
 	background: #c4bebe;
 	color: #fff;
 }
+/* 横向 */
+.imgCut1 {
+	width: 1240px;
+	height: 720px;
+	/* position: relative; */
+}
+/* 竖向 */
+.imgCut0 {
+	width: 720px;
+	height: 1240px;
+	/* position: relative; */
+}
 .img {
 	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	/* position: absolute; */
 }
 .date {
 	font-size: 32px;
