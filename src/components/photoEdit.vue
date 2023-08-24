@@ -2,12 +2,14 @@
 	<div class="edit">
 		<h1>Photo Edit</h1>
 
+		<!-- 流程条 -->
 		<el-steps :space="200" :active="active" finish-status="success">
 			<el-step :title="imgUrl === undefined ? '待上传' : '已上传'"></el-step>
 			<el-step title="待编辑"></el-step>
 			<el-step title="待下载"></el-step>
 		</el-steps>
 
+		<!-- 上传文件按钮 -->
 		<input
 			class="uploadBtn"
 			type="file"
@@ -15,9 +17,11 @@
 			@change="handleFileChange"
 		/>
 
-		<el-skeleton v-if="imageUrl === undefined" :rows="6" animated />
+		<!-- 缺省动画 -->
+		<el-skeleton v-if="imageUrl === ''" :rows="6" animated />
 
-		<div class="editBox" v-if="imageUrl !== undefined">
+		<!-- 日期、地点输入框 -->
+		<div class="editBox" v-if="imageUrl !== ''">
 			<div class="inputBox">
 				时间：
 				<el-time-select
@@ -65,10 +69,11 @@
 			</div>
 		</div>
 
+		<!-- 图片预览区域 -->
 		<div
-			v-if="imageUrl !== undefined"
+			v-if="imageUrl !== ''"
 			ref="vueDomSaveToImage"
-			:class="imgDirection === '1' ? 'imgBox1' : 'imgBox'"
+			:class="imgDirection === '1' ? 'imgBox1' : 'imgBox0'"
 		>
 			<div :class="imgDirection === '1' ? 'imgCut0' : 'imgCut1'">
 				<img class="img" :src="imageUrl" alt="" />
@@ -98,11 +103,12 @@ export default {
 	data() {
 		return {
 			active: 1, //当前进度
-			imageUrl: undefined, //图片地址
+			imageUrl: '', //图片地址
+			fileName: '',
 			add: ' 西安市·汇成·和苑',
 			timeValue: '07:58',
-			dateValue: '2023-07-06',
-			weekValue: '四',
+			dateValue: '2023-08-25',
+			weekValue: '五',
 			weekOptions: [
 				{ label: '一', value: '一' },
 				{ label: '二', value: '二' },
@@ -120,6 +126,8 @@ export default {
 	methods: {
 		handleFileChange(e) {
 			const file = e.target.files[0];
+			// 取上传文件的文件名
+			this.fileName = file.name.substring(0, file.name.lastIndexOf('.'));
 			const fileReader = new FileReader();
 			fileReader.onload = (e) => {
 				const img = new Image();
@@ -140,7 +148,7 @@ export default {
 
 				const timeStr = '07:58';
 				const [hours, minutes] = timeStr.split(':');
-				let houra = hours; // 使用let定义
+				let houra = hours;
 
 				const offset = Math.floor(Math.random() * 11 - 1);
 
@@ -170,7 +178,7 @@ export default {
 						'a'
 					);
 					save_link.href = imgUrl;
-					save_link.download = this.dateValue + '-' + this.timeValue + '.png';
+					save_link.download = this.fileName + '.png'; //保存文件名格式为 ***-点名册、会议纪要、等文件名
 					const event = document.createEvent('MouseEvents');
 					event.initMouseEvent(
 						'click',
@@ -190,7 +198,8 @@ export default {
 						null
 					);
 					save_link.dispatchEvent(event);
-					this.imageUrl = undefined;
+					this.imageUrl = '';
+					this.fileName = '';
 					this.active = 1; //步骤置为1
 					this.$notify({
 						title: '成功',
@@ -232,13 +241,15 @@ export default {
 .addInput {
 	width: 180px;
 }
-.imgBox {
+/* 横向 */
+.imgBox0 {
 	width: 1240px;
 	height: 720px;
 	position: relative;
 	background: #c4bebe;
 	color: #fff;
 }
+/* 竖向 */
 .imgBox1 {
 	width: 720px;
 	height: 1240px;
