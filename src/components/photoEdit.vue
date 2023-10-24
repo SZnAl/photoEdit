@@ -150,14 +150,10 @@ export default {
 				message: h('p', null, [
 					h('span', null, '图片文件名为 '),
 					h('i', { style: 'color: red' }, '[会议照片]'),
-					h(
-						'span',
-						null,
-						' 时,时间随机取07:56、07:57、07:58、07:59、08:00、08:01。'
-					),
+					h('span', null, ' 时,时间取07:56~08:01。'),
 					h('span', null, '图片文件名为 '),
 					h('i', { style: 'color: red' }, '[点名册、会议纪要、公告栏]'),
-					h('span', null, ' 时,时间随机取08:05、08:06、08:07、08:08、08:09。'),
+					h('span', null, ' 时,时间取08:05~08:09。'),
 				]),
 				showCancelButton: false,
 				confirmButtonText: '确定',
