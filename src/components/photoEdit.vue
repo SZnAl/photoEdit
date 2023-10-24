@@ -4,7 +4,7 @@
 
 		<!-- 流程条 -->
 		<el-steps :space="200" :active="active" finish-status="success">
-			<el-step :title="imgUrl === undefined ? '待上传' : '已上传'"></el-step>
+			<el-step :title="imageUrl === undefined ? '待上传' : '已上传'"></el-step>
 			<el-step title="待编辑"></el-step>
 			<el-step title="待下载"></el-step>
 		</el-steps>
@@ -42,6 +42,7 @@
 					type="date"
 					value-format="yyyy-MM-dd"
 					placeholder="选择日期"
+					@change="handleDateChange"
 				>
 				</el-date-picker>
 			</div>
@@ -121,13 +122,102 @@ export default {
 			imgDirection: '0', //0：0：横版 1：竖向
 		};
 	},
-	mounted() {},
+	mounted() {
+		// 获取当前日期 yyyy-mm-dd
+		function timestampToTime(timestamp) {
+			var date = new Date(timestamp); //时间戳为10位需*1000，时间戳为13位的话不需乘1000
+			var Y = date.getFullYear() + '-';
+			var M =
+				(date.getMonth() + 1 < 10
+					? '0' + (date.getMonth() + 1)
+					: date.getMonth() + 1) + '-';
+			var D =
+				(date.getDate() < 10 ? '0' + date.getDate() : date.getDate()) + ' ';
+
+			return Y + M + D;
+		}
+		this.dateValue = timestampToTime(Date.now());
+		this.handleDateChange();
+		this.message();
+	},
 
 	methods: {
+		// 提示信息
+		message() {
+			const h = this.$createElement;
+			this.$msgbox({
+				title: '提示',
+				message: h('p', null, [
+					h('span', null, '图片文件名为 '),
+					h('i', { style: 'color: red' }, '[会议照片]'),
+					h(
+						'span',
+						null,
+						' 时,时间随机取07:56、07:57、07:58、07:59、08:00、08:01。'
+					),
+					h('span', null, '图片文件名为 '),
+					h('i', { style: 'color: red' }, '[点名册、会议纪要、公告栏]'),
+					h('span', null, ' 时,时间随机取08:05、08:06、08:07、08:08、08:09。'),
+				]),
+				showCancelButton: false,
+				confirmButtonText: '确定',
+				beforeClose: (action, instance, done) => {
+					done();
+				},
+			}).catch(() => {});
+		},
+
+		// 日期获取周几
+		handleDateChange() {
+			let datelist = ['日', '一', '二', '三', '四', '五', '六'];
+			let week = datelist[new Date(this.dateValue).getDay()];
+			this.weekValue = week;
+		},
+
+		// 上传
 		handleFileChange(e) {
+			this.imageUrl = '';
+			this.fileName = '';
+
 			const file = e.target.files[0];
 			// 取上传文件的文件名
 			this.fileName = file.name.substring(0, file.name.lastIndexOf('.'));
+
+			// 获取 min-max 之间的随机整数
+			function getRandomInt(min, max) {
+				min = Math.ceil(min);
+				max = Math.floor(max);
+				return Math.floor(Math.random() * (max - min + 1)) + min;
+			}
+
+			// 根据文件名 匹配时间
+			let time = [
+				'07:56',
+				'07:57',
+				'07:58',
+				'07:59',
+				'08:00',
+				'08:01',
+				'08:05',
+				'08:06',
+				'08:07',
+				'08:08',
+				'08:09',
+				'08:07',
+				'08:06',
+				'08:05',
+			];
+
+			if (this.fileName == '会议照片') {
+				this.timeValue = time[getRandomInt(0, 5)];
+			} else if (
+				this.fileName == '点名册' ||
+				this.fileName == '会议纪要' ||
+				this.fileName == '公告栏'
+			) {
+				this.timeValue = time[getRandomInt(6, 13)];
+			}
+
 			const fileReader = new FileReader();
 			fileReader.onload = (e) => {
 				const img = new Image();
@@ -136,38 +226,22 @@ export default {
 					const height = img.height;
 					const ratio = width / height;
 					if (ratio > 0.9) {
-						console.log('横向图片');
+						// 横向图片
 						this.imgDirection = '0';
 					} else {
-						console.log('竖向图片');
+						// 竖向图片
 						this.imgDirection = '1';
 					}
 				};
 				img.src = e.target.result;
 				this.imageUrl = img.src;
 
-				const timeStr = '07:58';
-				const [hours, minutes] = timeStr.split(':');
-				let houra = hours;
-
-				const offset = Math.floor(Math.random() * 11 - 1);
-
-				let newMinutes = Number(minutes) + offset;
-				if (newMinutes >= 60) {
-					houra++;
-					newMinutes -= 60;
-				} else if (newMinutes < 0) {
-					houra--;
-					newMinutes += 60;
-				}
-
-				this.timeValue = `${houra.toString().padStart(2, '0')}:${newMinutes
-					.toString()
-					.padStart(2, '0')}`;
-				this.active = 2;
+				this.active = 2; //置为第二步
 			};
 			fileReader.readAsDataURL(file);
 		},
+
+		// 保存图片
 		saveToImage() {
 			this.$nextTick(() => {
 				html2canvas(this.$refs.vueDomSaveToImage).then((res) => {
