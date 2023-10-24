@@ -1,6 +1,6 @@
 <template>
 	<div class="edit">
-		<h1>Photo Edit</h1>
+		<h1>Photo Edit V{{ version }}</h1>
 
 		<!-- 流程条 -->
 		<el-steps :space="200" :active="active" finish-status="success">
@@ -18,7 +18,7 @@
 		/>
 
 		<!-- 缺省动画 -->
-		<el-skeleton v-if="imageUrl === ''" :rows="6" animated />
+		<el-skeleton v-if="imageUrl === ''" :rows="15" animated />
 
 		<!-- 日期、地点输入框 -->
 		<div class="editBox" v-if="imageUrl !== ''">
@@ -77,7 +77,7 @@
 			:class="imgDirection === '1' ? 'imgBox1' : 'imgBox0'"
 		>
 			<div :class="imgDirection === '1' ? 'imgCut0' : 'imgCut1'">
-				<img class="img" :src="imageUrl" alt="" />
+				<img class="saveImg" :src="imageUrl" alt="" />
 			</div>
 
 			<div class="time">{{ timeValue }}</div>
@@ -97,12 +97,14 @@
 
 <script>
 import html2canvas from 'html2canvas';
+import pkg from '../../package.json';
 
 export default {
 	name: 'photoEdit',
 	components: {},
 	data() {
 		return {
+			version: '',
 			active: 1, //当前进度
 			imageUrl: '', //图片地址
 			fileName: '',
@@ -123,6 +125,12 @@ export default {
 		};
 	},
 	mounted() {
+		console.log(
+			'Version:' + `%c ${pkg.version} %c`,
+			'background:#666;color:#fff;border-radius:3px;',
+			''
+		);
+		this.version = pkg.version;
 		// 获取当前日期 yyyy-mm-dd
 		function timestampToTime(timestamp) {
 			var date = new Date(timestamp); //时间戳为10位需*1000，时间戳为13位的话不需乘1000
@@ -209,7 +217,8 @@ export default {
 			} else if (
 				this.fileName == '点名册' ||
 				this.fileName == '会议纪要' ||
-				this.fileName == '公告栏'
+				this.fileName == '公告栏' ||
+				this.fileName == '会议记录'
 			) {
 				this.timeValue = time[getRandomInt(6, 13)];
 			}
@@ -242,13 +251,13 @@ export default {
 			this.$nextTick(() => {
 				html2canvas(this.$refs.vueDomSaveToImage).then((res) => {
 					console.log(res, 'res');
-					let imgUrl = res.toDataURL('image/png');
+					let imgUrl = res.toDataURL('image/jpg');
 					const save_link = document.createElementNS(
 						'http://www.w3.org/1999/xhtml',
 						'a'
 					);
 					save_link.href = imgUrl;
-					save_link.download = this.fileName + '.png'; //保存文件名格式为 ***-点名册、会议纪要、等文件名
+					save_link.download = this.fileName + '.jpg'; //保存文件名格式为 ***-点名册、会议纪要、等文件名
 					const event = document.createEvent('MouseEvents');
 					event.initMouseEvent(
 						'click',
@@ -269,11 +278,12 @@ export default {
 					);
 					save_link.dispatchEvent(event);
 					this.imageUrl = '';
-					this.fileName = '';
+
 					this.active = 1; //步骤置为1
 					this.$notify({
-						title: '成功',
-						message: '保存成功!',
+						title: this.fileName,
+						message: '[' + this.fileName + ']' + '保存成功!',
+						position: 'bottom-right',
 						type: 'success',
 					});
 					this.$forceUpdate();
@@ -339,7 +349,7 @@ export default {
 	height: 1240px;
 	/* position: relative; */
 }
-.img {
+.saveImg {
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
