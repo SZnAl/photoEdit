@@ -2,7 +2,7 @@
 	"name": "photo_edit",
 	"author": "LXY",
 	"description": "Add specific watermarks to images",
-	"version": "1.2.0",
+	"version": "1.3.0",
 	"private": true,
 	"main": "./main.js",
 	"scripts": {

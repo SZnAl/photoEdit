@@ -1,73 +1,109 @@
 <template>
 	<div class="edit">
-		<h1>Photo Edit V{{ version }}</h1>
+		<div class="title">
+			<h1>Photo Edit V{{ version }}</h1>
+			<el-tooltip
+				class="item"
+				effect="dark"
+				content="点击查看提示"
+				placement="right"
+			>
+				<em class="el-icon-info tipsIcon" @click="dialogVisible = true"></em>
+			</el-tooltip>
+		</div>
 
 		<!-- 流程条 -->
-		<el-steps :space="200" :active="active" finish-status="success">
-			<el-step :title="imageUrl === undefined ? '待上传' : '已上传'"></el-step>
-			<el-step title="待编辑"></el-step>
-			<el-step title="待下载"></el-step>
+		<el-steps :active="active" finish-status="success">
+			<el-step :title="'信息编辑'"></el-step>
+			<el-step title="图片上传"></el-step>
+			<el-step title="图片下载"></el-step>
 		</el-steps>
 
-		<!-- 上传文件按钮 -->
-		<input
-			class="uploadBtn"
-			type="file"
-			accept="image/*"
-			@change="handleFileChange"
-		/>
-
-		<!-- 缺省动画 -->
-		<el-skeleton v-if="imageUrl === ''" :rows="15" animated />
-
-		<!-- 日期、地点输入框 -->
-		<div class="editBox" v-if="imageUrl !== ''">
-			<div class="inputBox">
-				时间：
-				<el-time-select
-					v-model="timeValue"
-					:picker-options="{
-						start: '07:55',
-						step: '00:01',
-						end: '08:05',
-					}"
-					placeholder="选择时间"
-				>
-				</el-time-select>
-			</div>
-			<div class="inputBox">
-				日期：
-				<el-date-picker
-					v-model="dateValue"
-					type="date"
-					value-format="yyyy-MM-dd"
-					placeholder="选择日期"
-					@change="handleDateChange"
-				>
-				</el-date-picker>
-			</div>
-			<div class="inputBox">
-				周几:
-				<el-select v-model="weekValue" placeholder="请选择">
-					<el-option
-						v-for="item in weekOptions"
-						:key="item.value"
-						:label="item.label"
-						:value="item.value"
+		<div class="infoEdit">
+			<el-form v-if="active === 1">
+				<!-- <el-form-item label="时间:" :label-width="formLabelWidth">
+					<el-time-select
+						v-model="timeValue"
+						:picker-options="{
+							start: '07:55',
+							step: '00:01',
+							end: '08:05',
+						}"
+						placeholder="选择时间"
 					>
-					</el-option>
-				</el-select>
-			</div>
-			<div class="inputBox">
-				地点:
-				<el-input class="addInput" v-model="add" placeholder="请输入" />
-			</div>
+					</el-time-select>
+				</el-form-item> -->
+				<el-form-item label="日期:" :label-width="formLabelWidth">
+					<el-date-picker
+						class="infoEditItem"
+						v-model="dateValue"
+						type="date"
+						value-format="yyyy-MM-dd"
+						placeholder="选择日期"
+						@change="handleDateChange"
+						:clearable="false"
+					>
+					</el-date-picker>
+				</el-form-item>
+				<el-form-item label="周几:" :label-width="formLabelWidth">
+					<el-select
+						class="infoEditItem"
+						v-model="weekValue"
+						disabled
+						placeholder="请选择"
+					>
+						<el-option
+							v-for="item in weekOptions"
+							:key="item.value"
+							:label="item.label"
+							:value="item.value"
+						>
+						</el-option>
+					</el-select>
+				</el-form-item>
+				<el-form-item label="地点:" :label-width="formLabelWidth">
+					<el-input class="infoEditItem" v-model="add" placeholder="请输入" />
+				</el-form-item>
+			</el-form>
+		</div>
 
-			<div>
-				<el-button class="saveBtn" type="primary" @click="saveToImage"
-					>保存图片</el-button
+		<!-- 上传组件 -->
+		<div
+			class="uploadBox transition-box"
+			v-if="active === 2"
+			v-show="downloading === false"
+		>
+			<el-upload
+				class="upload-demo"
+				action="https://jsonplaceholder.typicode.com/posts/"
+				:on-remove="handleRemove"
+				:file-list="fileList"
+				list-type="picture"
+				multiple
+				:auto-upload="false"
+				:on-change="handleChange"
+				:limit="4"
+				accept=".jpg,.png,.jpeg"
+			>
+				<el-button class="uploadBtn" type="primary" v-if="fileList < 1"
+					>点击上传</el-button
 				>
-			</div>
+				<!-- <div slot="tip" class="el-upload__tip">只能上传jpg/png文件</div> -->
+			</el-upload>
+		</div>
+
+		<!-- 下一步 按钮 -->
+		<div class="nextStepBox">
+			<el-button
+				class="nextStepBtn"
+				type="primary"
+				@click="nextStep"
+				v-show="
+					active === 1 ||
+					(active === 2 && fileList.length > 0 && downloading === false)
+				"
+				>{{ active === 1 ? '下一步' : '添加水印并下载' }}</el-button
+			>
 		</div>
 
 		<!-- 图片预览区域 -->
@@ -80,18 +116,42 @@
 				<img class="saveImg" :src="imageUrl" alt="" />
 			</div>
 
-			<div class="time">{{ timeValue }}</div>
+			<div class="timeValue">{{ timeValue }}</div>
 			<div class="details">
-				<span class="date">{{ dateValue }}</span>
+				<span class="dateValue">{{ dateValue }}</span>
 				<div class="empty"></div>
 				{{ '星期' + weekValue + '' }}
 				<div class="empty"></div>
-				<img src="@/assets/ding.png" alt="" class="ding" />
+				<img src="@/assets/ding.png" alt="" class="dingIcon" />
 				{{ add }}
 			</div>
 
 			<img src="../assets/logo.png" class="logo" alt="" />
 		</div>
+
+		<!-- 提示 弹窗 -->
+		<el-dialog title="温馨提示" :visible.sync="dialogVisible" width="40%">
+			<div>
+				每次最多可选择<span style="color: red">4</span
+				>张图片，根据图片文件名自动匹配水印时间
+			</div>
+			<div>
+				图片文件名为<span style="color: red">[会议照片]</span>时,时间随机取<span
+					style="color: blue"
+					>07:56~08:01</span
+				>。
+			</div>
+			<div>
+				图片文件名为<span style="color: red">[点名册、会议纪要、公告栏]</span
+				>时,时间随机取<span style="color: blue">08:05~08:09</span>。
+			</div>
+
+			<span slot="footer" class="dialog-footer">
+				<el-button type="primary" plain @click="dialogVisible = false"
+					>确 定</el-button
+				>
+			</span>
+		</el-dialog>
 	</div>
 </template>
 
@@ -99,15 +159,27 @@
 import html2canvas from 'html2canvas';
 import pkg from '../../package.json';
 
+// 获取 min-max 之间的随机整数
+function getRandomInt(min, max) {
+	min = Math.ceil(min);
+	max = Math.floor(max);
+	return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 export default {
 	name: 'photoEdit',
 	components: {},
 	data() {
 		return {
-			version: '',
+			formLabelWidth: '50px', //form 标签宽度
+			dialogVisible: false, //弹窗
+			count: 0,
+			fileList: [], //上传文件列表
+			downloading: false, //是否正在下载
+			version: '', //版本号
 			active: 1, //当前进度
-			imageUrl: '', //图片地址
-			fileName: '',
+			imageUrl: '', //预览图片
+			fileName: '', //当前文件名
 			add: ' 西安市·汇成·和苑',
 			timeValue: '07:58',
 			dateValue: '2023-08-25',
@@ -125,6 +197,7 @@ export default {
 		};
 	},
 	mounted() {
+		// 当前版本号
 		console.log(
 			'Version:' + `%c ${pkg.version} %c`,
 			'background:#666;color:#fff;border-radius:3px;',
@@ -146,29 +219,32 @@ export default {
 		}
 		this.dateValue = timestampToTime(Date.now());
 		this.handleDateChange();
-		this.message();
+		this.dialogVisible = true; //打开提示弹窗
 	},
 
 	methods: {
-		// 提示信息
-		message() {
-			const h = this.$createElement;
-			this.$msgbox({
-				title: '提示',
-				message: h('p', null, [
-					h('span', null, '图片文件名为 '),
-					h('i', { style: 'color: red' }, '[会议照片]'),
-					h('span', null, ' 时,时间取07:56~08:01。'),
-					h('span', null, '图片文件名为 '),
-					h('i', { style: 'color: red' }, '[点名册、会议纪要、公告栏]'),
-					h('span', null, ' 时,时间取08:05~08:09。'),
-				]),
-				showCancelButton: false,
-				confirmButtonText: '确定',
-				beforeClose: (action, instance, done) => {
-					done();
-				},
-			}).catch(() => {});
+		// 下一步
+		nextStep() {
+			if (this.active === 3) {
+				this.active = 1;
+			} else if (this.active === 2) {
+				this.downloading = true;
+				this.handleFileChange();
+			} else {
+				this.active++;
+			}
+		},
+
+		// 删除图片
+		handleRemove(file, fileList) {
+			console.log(file, fileList);
+			this.fileList = fileList;
+		},
+
+		// 上传图片修改
+		handleChange(file, fileList) {
+			this.fileList = fileList;
+			console.log(file, fileList, 'change');
 		},
 
 		// 日期获取周几
@@ -179,20 +255,27 @@ export default {
 		},
 
 		// 上传
-		handleFileChange(e) {
-			this.imageUrl = '';
-			this.fileName = '';
+		handleFileChange() {
+			var timer = setInterval(() => {
+				this.export(this.fileList[this.count]);
+				this.count += 1;
+				if (this.count >= this.fileList.length) {
+					clearInterval(timer);
+				}
+			}, 1000);
+		},
 
-			const file = e.target.files[0];
-			// 取上传文件的文件名
-			this.fileName = file.name.substring(0, file.name.lastIndexOf('.'));
+		// 图片处理
+		export(item) {
+			const loading = this.$loading({
+				lock: true,
+				text: '下载中，请稍后...',
+				spinner: 'el-icon-loading',
+				background: 'rgba(0, 0, 0, 0.7)',
+			});
 
-			// 获取 min-max 之间的随机整数
-			function getRandomInt(min, max) {
-				min = Math.ceil(min);
-				max = Math.floor(max);
-				return Math.floor(Math.random() * (max - min + 1)) + min;
-			}
+			this.imageUrl = item.url;
+			this.fileName = item.name.substring(0, item.name.lastIndexOf('.'));
 
 			// 根据文件名 匹配时间
 			let time = [
@@ -212,42 +295,20 @@ export default {
 				'08:05',
 			];
 
-			if (this.fileName == '会议照片') {
+			if (this.fileName == '会议内容') {
 				this.timeValue = time[getRandomInt(0, 5)];
+				this.imgDirection = '1';
 			} else if (
 				this.fileName == '点名册' ||
 				this.fileName == '会议纪要' ||
 				this.fileName == '公告栏' ||
-				this.fileName == '会议记录'
+				this.fileName == '会议记录' ||
+				this.fileName == '会议照片'
 			) {
 				this.timeValue = time[getRandomInt(6, 13)];
+				this.imgDirection = '0';
 			}
 
-			const fileReader = new FileReader();
-			fileReader.onload = (e) => {
-				const img = new Image();
-				img.onload = () => {
-					const width = img.width;
-					const height = img.height;
-					const ratio = width / height;
-					if (ratio > 0.9) {
-						// 横向图片
-						this.imgDirection = '0';
-					} else {
-						// 竖向图片
-						this.imgDirection = '1';
-					}
-				};
-				img.src = e.target.result;
-				this.imageUrl = img.src;
-
-				this.active = 2; //置为第二步
-			};
-			fileReader.readAsDataURL(file);
-		},
-
-		// 保存图片
-		saveToImage() {
 			this.$nextTick(() => {
 				html2canvas(this.$refs.vueDomSaveToImage).then((res) => {
 					console.log(res, 'res');
@@ -277,50 +338,54 @@ export default {
 						null
 					);
 					save_link.dispatchEvent(event);
-					this.imageUrl = '';
-
-					this.active = 1; //步骤置为1
 					this.$notify({
 						title: this.fileName,
 						message: '[' + this.fileName + ']' + '保存成功!',
 						position: 'bottom-right',
 						type: 'success',
+						duration: 0,
 					});
-					this.$forceUpdate();
 				});
 			});
+			if (this.count + 1 >= this.fileList.length) {
+				this.$message({
+					message: '全部处理完成，2秒后返回主页',
+					type: 'success',
+				});
+				setTimeout(() => {
+					loading.close();
+					history.go(0);
+				}, 2000);
+			}
 		},
 	},
 };
 </script>
 
-<style scoped>
+<style>
 .edit {
-	padding: 0 100px;
+	width: 90%;
+	height: 100%;
+	padding: 0 5%;
+	margin: 0 auto;
+	/* text-align: center; */
+	/* display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center; */
 }
 
-.uploadBtn {
-	width: 500px;
-	height: 60px;
-}
-.editBox {
+.title {
 	display: flex;
-	font-size: 26px;
-	font-weight: 500;
-	margin: 0px 0 50px 0;
+	align-items: center;
 }
-.inputBox {
-	margin-right: 50px;
+.tipsIcon {
+	font-size: 30px;
+	cursor: pointer;
+	color: royalblue;
+	margin-left: 10px;
 }
-.input {
-	width: 200px;
-	height: 40px;
-	border: rgb(22, 169, 238) 3px solid;
-	border-radius: 8px;
-}
-.addInput {
-	width: 180px;
-}
+
 /* 横向 */
 .imgBox0 {
 	width: 1240px;
@@ -355,16 +420,16 @@ export default {
 	object-fit: cover;
 	/* position: absolute; */
 }
-.date {
+.dateValue {
 	font-size: 32px;
 }
-.ding {
+.dingIcon {
 	width: 40px;
 }
 .empty {
 	width: 10px;
 }
-.time {
+.timeValue {
 	width: 300px;
 	position: absolute;
 	bottom: 13%;
@@ -392,5 +457,53 @@ export default {
 	height: 50px;
 	right: 10px;
 	bottom: 10px;
+}
+
+.infoEdit {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	margin-top: 50px;
+}
+
+.infoEditItem {
+	width: 200px !important;
+}
+
+.upload-demo {
+	width: 400px;
+	margin: 0 auto;
+	text-align: center;
+}
+
+.uploadBox,
+.nextStepBox {
+	width: 100%;
+	height: 100%;
+	margin: 0 auto;
+	text-align: center;
+	margin-top: 50px;
+}
+
+.nextStepBtn,
+.uploadBtn {
+	width: 200px;
+	height: 50px;
+}
+
+.el-dialog {
+	border-radius: 20px !important;
+	margin-top: 30vh !important;
+}
+.el-dialog__title {
+	font-weight: 600;
+	font-size: 24px !important;
+}
+.el-dialog__body {
+	font-size: 18px !important;
+	line-height: 3em;
 }
 </style>
