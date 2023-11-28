@@ -295,14 +295,16 @@ export default {
 				'08:05',
 			];
 
-			if (this.fileName == '会议内容') {
+			if (
+				this.fileName == '会议内容' ||
+				this.fileName == '会议纪要' ||
+				this.fileName == '会议记录'
+			) {
 				this.timeValue = time[getRandomInt(0, 5)];
 				this.imgDirection = '1';
 			} else if (
 				this.fileName == '点名册' ||
-				this.fileName == '会议纪要' ||
 				this.fileName == '公告栏' ||
-				this.fileName == '会议记录' ||
 				this.fileName == '会议照片'
 			) {
 				this.timeValue = time[getRandomInt(6, 13)];
