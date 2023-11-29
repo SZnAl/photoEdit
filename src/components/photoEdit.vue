@@ -2,6 +2,19 @@
 	<div class="edit">
 		<div class="title">
 			<h1>Photo Edit V{{ version }}</h1>
+
+			<el-tooltip
+				class="item"
+				effect="dark"
+				content="点击返回主页"
+				placement="right"
+			>
+				<em
+					class="el-icon-s-home tipsIcon homeIcon"
+					@click="handleReload()"
+				></em>
+			</el-tooltip>
+
 			<el-tooltip
 				class="item"
 				effect="dark"
@@ -193,7 +206,7 @@ export default {
 				{ label: '六', value: '六' },
 				{ label: '日', value: '日' },
 			], //周 下拉框数据
-			imgDirection: '0', //0：0：横版 1：竖向
+			imgDirection: '0', //0：横版 1：竖向
 		};
 	},
 	mounted() {
@@ -219,10 +232,13 @@ export default {
 		}
 		this.dateValue = timestampToTime(Date.now());
 		this.handleDateChange();
-		this.dialogVisible = true; //打开提示弹窗
+		// this.dialogVisible = true; //打开提示弹窗
 	},
 
 	methods: {
+		handleReload() {
+			history.go(0);
+		},
 		// 下一步
 		nextStep() {
 			if (this.active === 3) {
@@ -295,6 +311,7 @@ export default {
 				'08:05',
 			];
 
+			//0：横版 1：竖向
 			if (
 				this.fileName == '会议内容' ||
 				this.fileName == '会议纪要' ||
@@ -339,26 +356,70 @@ export default {
 						0,
 						null
 					);
-					save_link.dispatchEvent(event);
-					this.$notify({
-						title: this.fileName,
-						message: '[' + this.fileName + ']' + '保存成功!',
-						position: 'bottom-right',
-						type: 'success',
-						duration: 0,
+					// save_link.dispatchEvent(event);
+
+					async function downloadImage(imgUrl, name) {
+						try {
+							const response = await fetch(imgUrl);
+
+							console.log(response, 'res');
+
+							if (!response.ok) {
+								throw new Error(`HTTP error! status: ${response.status}`);
+							}
+
+							const blob = await response.blob();
+							const url = window.URL.createObjectURL(blob);
+							const link = document.createElement('a');
+							link.href = url;
+							link.download = name + '.jpg';
+							link.click();
+
+							console.log(link, 'link');
+
+							this.$notify({
+								title: this.fileName,
+								message: '[' + this.fileName + ']' + '保存成功!',
+								position: 'bottom-right',
+								type: 'success',
+								duration: 0,
+							});
+						} catch (error) {
+							console.error('Error downloading image:', error);
+						}
+					}
+
+					downloadImage(save_link, this.fileName).then(() => {
+						console.log('finfish');
+						this.$notify({
+							title: this.fileName,
+							message: '[' + this.fileName + ']' + '保存成功!',
+							position: 'bottom-right',
+							type: 'success',
+							// duration: 0,
+						});
+						loading.close();
+						// this.$message({
+						// 	message: '全部处理完成，2秒后返回主页',
+						// 	type: 'success',
+						// });
 					});
+					// this.$notify({
+					// 	title: this.fileName,
+					// 	message: '[' + this.fileName + ']' + '保存成功!',
+					// 	position: 'bottom-right',
+					// 	type: 'success',
+					// 	duration: 0,
+					// });
 				});
 			});
-			if (this.count + 1 >= this.fileList.length) {
-				this.$message({
-					message: '全部处理完成，2秒后返回主页',
-					type: 'success',
-				});
-				setTimeout(() => {
-					loading.close();
-					history.go(0);
-				}, 2000);
-			}
+			// if (this.count + 1 >= this.fileList.length) {
+			// 	loading.close();
+			// 	this.$message({
+			// 		message: '全部处理完成，2秒后返回主页',
+			// 		type: 'success',
+			// 	});
+			// }
 		},
 	},
 };
@@ -384,8 +445,11 @@ export default {
 .tipsIcon {
 	font-size: 30px;
 	cursor: pointer;
-	color: royalblue;
+	color: #909399;
 	margin-left: 10px;
+}
+.homeIcon {
+	color: #409eff;
 }
 
 /* 横向 */
@@ -408,6 +472,10 @@ export default {
 .imgCut1 {
 	width: 1240px;
 	height: 720px;
+	overflow: hidden;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 	/* position: relative; */
 }
 /* 竖向 */
@@ -418,9 +486,6 @@ export default {
 }
 .saveImg {
 	width: 100%;
-	height: 100%;
-	object-fit: cover;
-	/* position: absolute; */
 }
 .dateValue {
 	font-size: 32px;
